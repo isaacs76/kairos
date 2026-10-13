@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Bronzo, animation de présentation</title>
+<!--
+  Animation de présentation du vinaigre balsamique Bronzo (Natale Nostro 2026).
+  Paramètres d'URL :
+    ?w=1080&h=1920   taille du canevas (9:16, 1:1 ou 16:9)
+    &mode=long|short version 20 s ou 6 s
+    &t=12.5          fige l'image à cet instant (sinon lecture en boucle)
+  Le rendu vidéo appelle window.render(t) image par image (voir render.mjs).
+-->
+<style>
+@font-face { font-family: "Cormorant"; font-weight: 500; src: url(fonts/cormorant-garamond-latin-500-normal.woff2) format("woff2"); }
+@font-face { font-family: "Cormorant"; font-weight: 600; src: url(fonts/cormorant-garamond-latin-600-normal.woff2) format("woff2"); }
+@font-face { font-family: "Cormorant"; font-weight: 500; font-style: italic; src: url(fonts/cormorant-garamond-latin-500-italic.woff2) format("woff2"); }
+@font-face { font-family: "Montserrat"; font-weight: 400; src: url(fonts/montserrat-latin-400-normal.woff2) format("woff2"); }
+@font-face { font-family: "Montserrat"; font-weight: 600; src: url(fonts/montserrat-latin-600-normal.woff2) format("woff2"); }
+
+:root {
+  --olive: #5b6b2f;
+  --gold: #d9a441;
+  --gold-light: #f7d774;
+  --brick: #a3362a;
+  --cream: #f4efe6;
+  --ink: #120d08;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--ink); overflow: hidden; }
+#stage {
+  position: relative; overflow: hidden;
+  background: radial-gradient(ellipse at 50% 45%, #2c1e10 0%, #170f08 55%, #0b0704 100%);
+  font-family: "Cormorant", Georgia, serif; color: var(--cream);
+}
+.abs { position: absolute; left: 0; top: 0; will-change: transform, opacity; }
+.center { transform-origin: 50% 50%; }
+.txt { text-align: center; white-space: nowrap; }
+.sans { font-family: "Montserrat", Arial, sans-serif; text-transform: uppercase; }
+#cta { background: var(--brick); color: #fff; border-radius: 999px; font-family: "Montserrat", Arial, sans-serif; font-weight: 600; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="glow" class="abs center"></div>
+  <svg id="barrels" class="abs center" viewBox="0 0 600 300">
+    <defs>
+      <linearGradient id="wood" x1="0" x2="1">
+        <stop offset="0" stop-color="#3a2614"/><stop offset=".5" stop-color="#6b4524"/><stop offset="1" stop-color="#3a2614"/>
+      </linearGradient>
+    </defs>
+    <g id="barrelGroup">
+      <g transform="translate(20,40)">
+        <path d="M20 0 Q0 110 20 220 L160 220 Q180 110 160 0 Z" fill="url(#wood)"/>
+        <rect x="8" y="40" width="164" height="12" fill="#2a1a0c"/><rect x="8" y="168" width="164" height="12" fill="#2a1a0c"/>
+      </g>
+      <g transform="translate(220,10)">
+        <path d="M20 0 Q0 130 20 260 L170 260 Q190 130 170 0 Z" fill="url(#wood)"/>
+        <rect x="8" y="50" width="174" height="12" fill="#2a1a0c"/><rect x="8" y="198" width="174" height="12" fill="#2a1a0c"/>
+      </g>
+      <g transform="translate(420,40)">
+        <path d="M20 0 Q0 110 20 220 L160 220 Q180 110 160 0 Z" fill="url(#wood)"/>
+        <rect x="8" y="40" width="164" height="12" fill="#2a1a0c"/><rect x="8" y="168" width="164" height="12" fill="#2a1a0c"/>
+      </g>
+    </g>
+  </svg>
+  <div id="particles" class="abs"></div>
+
+  <svg id="pool" class="abs center" viewBox="0 0 400 60">
+    <defs>
+      <radialGradient id="poolG" cx="50%" cy="40%" r="60%">
+        <stop offset="0" stop-color="#5a2f12"/><stop offset=".6" stop-color="#24120a"/><stop offset="1" stop-color="#120804" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <ellipse cx="200" cy="30" rx="198" ry="28" fill="url(#poolG)"/>
+    <ellipse cx="160" cy="22" rx="70" ry="5" fill="#f7d774" opacity=".35"/>
+  </svg>
+  <svg id="ripples" class="abs center" viewBox="0 0 400 80">
+    <ellipse id="r1" cx="200" cy="40" rx="10" ry="2" fill="none" stroke="#d9a441" stroke-width="2"/>
+    <ellipse id="r2" cx="200" cy="40" rx="10" ry="2" fill="none" stroke="#d9a441" stroke-width="1.5"/>
+    <ellipse id="r3" cx="200" cy="40" rx="10" ry="2" fill="none" stroke="#d9a441" stroke-width="1"/>
+  </svg>
+  <div id="splash" class="abs"></div>
+  <svg id="drop" class="abs center" viewBox="0 0 40 60">
+    <defs>
+      <radialGradient id="dropG" cx="35%" cy="60%" r="70%">
+        <stop offset="0" stop-color="#8a4a1c"/><stop offset=".5" stop-color="#3b1a0a"/><stop offset="1" stop-color="#160904"/>
+      </radialGradient>
+    </defs>
+    <path d="M20 0 C24 18 38 30 38 42 A18 18 0 0 1 2 42 C2 30 16 18 20 0 Z" fill="url(#dropG)"/>
+    <ellipse cx="13" cy="40" rx="4" ry="7" fill="#f7d774" opacity=".55"/>
+  </svg>
+
+  <!-- Bouteille : visuel provisoire, à remplacer par la photo détourée du produit -->
+  <svg id="bottle" class="abs center" viewBox="0 0 200 600">
+    <defs>
+      <linearGradient id="glass" x1="0" x2="1">
+        <stop offset="0" stop-color="#0d0805"/><stop offset=".25" stop-color="#2e1a0d"/><stop offset=".45" stop-color="#4a2a12"/>
+        <stop offset=".7" stop-color="#1c0f07"/><stop offset="1" stop-color="#070403"/>
+      </linearGradient>
+      <linearGradient id="bronze" x1="0" x2="1">
+        <stop offset="0" stop-color="#6e4a1f"/><stop offset=".35" stop-color="#d9a441"/><stop offset=".55" stop-color="#f7d774"/>
+        <stop offset=".8" stop-color="#a87628"/><stop offset="1" stop-color="#5c3c16"/>
+      </linearGradient>
+      <linearGradient id="sweepG" x1="0" x2="1">
+        <stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+      </linearGradient>
+      <clipPath id="bodyClip">
+        <path d="M78 0 H122 V120 C122 150 170 170 170 215 V570 Q170 598 142 598 H58 Q30 598 30 570 V215 C30 170 78 150 78 120 Z"/>
+      </clipPath>
+    </defs>
+    <rect x="74" y="0" width="52" height="58" rx="6" fill="url(#bronze)"/>
+    <rect x="74" y="50" width="52" height="6" fill="#4a3012" opacity=".6"/>
+    <path d="M78 56 H122 V120 C122 150 170 170 170 215 V570 Q170 598 142 598 H58 Q30 598 30 570 V215 C30 170 78 150 78 120 Z" fill="url(#glass)"/>
+    <rect x="44" y="200" width="10" height="370" rx="5" fill="#f7d774" opacity=".18"/>
+    <!-- Étiquette -->
+    <rect x="30" y="300" width="140" height="190" fill="#efe4cc"/>
+    <rect x="30" y="300" width="140" height="22" fill="url(#bronze)"/>
+    <rect x="30" y="468" width="140" height="22" fill="url(#bronze)"/>
+    <text x="100" y="375" text-anchor="middle" font-family="Cormorant" font-weight="600" font-size="27" fill="#3a2410" letter-spacing="2">BRONZO</text>
+    <line x1="58" y1="390" x2="142" y2="390" stroke="#a87628" stroke-width="1.5"/>
+    <text x="100" y="412" text-anchor="middle" font-family="Montserrat" font-size="9.5" fill="#3a2410" letter-spacing="1">ACETO BALSAMICO</text>
+    <text x="100" y="427" text-anchor="middle" font-family="Montserrat" font-size="9.5" fill="#3a2410" letter-spacing="1">DI MODENA IGP</text>
+    <text x="100" y="452" text-anchor="middle" font-family="Montserrat" font-weight="600" font-size="10" fill="#5b6b2f" letter-spacing="2">BIO · 250 ml</text>
+    <g clip-path="url(#bodyClip)">
+      <rect id="sweep" x="-120" y="0" width="70" height="600" fill="url(#sweepG)" transform="skewX(-18)"/>
+    </g>
+  </svg>
+
+  <!-- Coffret kraft -->
+  <svg id="box" class="abs center" viewBox="0 0 300 170">
+    <defs>
+      <linearGradient id="kraft" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#c79a63"/><stop offset="1" stop-color="#a77a45"/>
+      </linearGradient>
+    </defs>
+    <rect x="0" y="0" width="300" height="170" rx="4" fill="url(#kraft)"/>
+    <rect x="0" y="0" width="300" height="14" fill="#b5895a"/>
+    <rect id="ribV" x="138" y="0" width="24" height="170" fill="#a3362a"/>
+    <rect id="ribH" x="0" y="74" width="300" height="22" fill="#a3362a"/>
+    <path id="bow" d="M150 84 C115 45 95 70 112 92 C125 108 145 92 150 84 C155 92 175 108 188 92 C205 70 185 45 150 84 Z M150 84 L128 128 M150 84 L172 128"
+          fill="none" stroke="#c0443a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="70" y="140" text-anchor="middle" font-family="Cormorant" font-style="italic" font-size="17" fill="#4a3018">Buon Natale</text>
+  </svg>
+
+  <!-- Accords -->
+  <div id="vignettes"></div>
+
+  <!-- Textes -->
+  <div id="tBronzo" class="abs txt center">
+    <div id="tBronzoMain" style="font-weight:600;color:var(--gold-light)">Bronzo</div>
+    <div id="tBronzoSub" class="sans" style="color:var(--cream);opacity:.85">Vinaigre balsamique de Modène IGP · Bio</div>
+  </div>
+  <div id="t10" class="abs txt center" style="font-style:italic;font-weight:500;color:var(--cream)">10 ans d'<span style="color:var(--gold-light)">excellence</span></div>
+  <div id="pictos" class="abs center" style="display:flex;justify-content:center"></div>
+  <div id="tAccords" class="abs txt center" style="font-style:italic;font-weight:500"></div>
+  <div id="tCoffret" class="abs txt center">
+    <div id="tCoffret1" class="sans" style="color:var(--cream);opacity:.85">Dans le coffret</div>
+    <div id="tCoffret2" style="font-style:italic;font-weight:600;color:var(--gold-light)">Tavola di Natale</div>
+  </div>
+  <div id="final" class="abs txt center">
+    <div id="fLogo" style="font-weight:600;color:var(--cream)">SOLENOSTRO</div>
+    <div id="fTag" style="font-style:italic;font-weight:500;color:var(--gold-light)">Natale Nostro</div>
+    <div id="fUrl" class="sans" style="color:var(--cream);opacity:.8">solenostro.fr</div>
+    <div id="cta" style="display:inline-block">Découvrir le coffret</div>
+  </div>
+  <div id="fade" class="abs" style="background:#000;pointer-events:none"></div>
+</div>
+
+<script>
+const P = new URLSearchParams(location.search);
+const W = +P.get("w") || 1080, H = +P.get("h") || 1920;
+const MODE = P.get("mode") === "short" ? "short" : "long";
+const DURATION = MODE === "short" ? 6 : 20;
+const U = Math.min(W, H) / 100;                       // unité typographique
+const ORIENT = W > H * 1.2 ? "land" : H > W * 1.2 ? "port" : "square";
+
+const $ = id => document.getElementById(id);
+const stage = $("stage");
+stage.style.width = W + "px"; stage.style.height = H + "px";
+document.body.style.width = W + "px"; document.body.style.height = H + "px";
+
+// ---------- utilitaires d'animation ----------
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const lerp = (a, b, k) => a + (b - a) * k;
+const eio = k => k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+const eout = k => 1 - Math.pow(1 - k, 3);
+const eback = k => { const c = 1.6; return 1 + (c + 1) * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2); };
+// apparition (a→b) puis disparition (c→d)
+const vis = (t, a, b, c, d) => Math.min(eout(prog(t, a, b)), d === undefined ? 1 : 1 - eio(prog(t, c, d)));
+
+function place(el, x, y, w, h, extra = "", opacity = 1) {
+  el.style.width = w + "px"; if (h != null) el.style.height = h + "px";
+  el.style.transform = `translate(${x - w / 2}px, ${y - (h != null ? h : el.offsetHeight) / 2}px) ${extra}`;
+  el.style.opacity = opacity;
+  el.style.visibility = opacity <= 0.001 ? "hidden" : "visible";
+}
+
+// ---------- mise en page selon le format ----------
+const L = {
+  port:   { bx: W * .5,  by: H * .42, bh: H * .48, tx: W * .5,  ty: H * .80, tw: W * .9 },
+  square: { bx: W * .5,  by: H * .40, bh: H * .60, tx: W * .5,  ty: H * .86, tw: W * .9 },
+  land:   { bx: W * .30, by: H * .50, bh: H * .80, tx: W * .67, ty: H * .50, tw: W * .58 },
+}[ORIENT];
+const BW = L.bh / 3;                                  // la bouteille fait 1:3
+const baseY = L.by + L.bh / 2;                        // pied de la bouteille
+
+// tailles de texte
+$("tBronzoMain").style.fontSize = 17 * U + "px";
+$("tBronzoMain").style.lineHeight = 1;
+$("tBronzoSub").style.fontSize = 2.3 * U + "px";
+$("tBronzoSub").style.letterSpacing = ".25em";
+$("tBronzoSub").style.marginTop = 1.5 * U + "px";
+$("t10").style.fontSize = 9 * U + "px";
+$("tAccords").style.fontSize = 5.6 * U + "px";
+$("tCoffret1").style.fontSize = 2.6 * U + "px";
+$("tCoffret1").style.letterSpacing = ".3em";
+$("tCoffret2").style.fontSize = 9 * U + "px";
+$("tCoffret2").style.lineHeight = 1.1;
+$("fLogo").style.fontSize = 7.5 * U + "px";
+$("fLogo").style.letterSpacing = ".22em";
+$("fTag").style.fontSize = 6 * U + "px";
+$("fTag").style.marginTop = .4 * U + "px";
+$("fUrl").style.fontSize = 2.4 * U + "px";
+$("fUrl").style.letterSpacing = ".25em";
+$("fUrl").style.margin = 1.6 * U + "px 0 " + 2.6 * U + "px";
+$("cta").style.fontSize = 2.6 * U + "px";
+$("cta").style.padding = `${1.8 * U}px ${4.5 * U}px`;
+$("cta").style.letterSpacing = ".06em";
+
+// lueur
+const glow = $("glow");
+glow.style.background = "radial-gradient(circle, rgba(247,215,116,.45) 0%, rgba(217,164,65,.18) 35%, rgba(217,164,65,0) 70%)";
+
+// particules dorées (positions déterministes)
+const parts = [];
+let seed = 7;
+const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+for (let i = 0; i < 34; i++) {
+  const d = document.createElement("div");
+  const s = (0.3 + rnd() * 1.2) * U;
+  d.className = "abs";
+  d.style.width = d.style.height = s + "px";
+  d.style.borderRadius = "50%";
+  d.style.background = "radial-gradient(circle, rgba(247,215,116,.9), rgba(247,215,116,0) 70%)";
+  $("particles").appendChild(d);
+  parts.push({ d, s, x: rnd() * W, y: rnd() * H, sp: (0.01 + rnd() * 0.03) * H, ph: rnd() * 6.28, o: 0.25 + rnd() * 0.5 });
+}
+
+// gouttelettes d'éclaboussure
+const drops = [];
+for (let i = 0; i < 6; i++) {
+  const d = document.createElement("div");
+  d.className = "abs";
+  d.style.borderRadius = "50%";
+  d.style.background = "#3b1a0a";
+  d.style.boxShadow = "inset -2px -2px 3px rgba(247,215,116,.4)";
+  $("splash").appendChild(d);
+  drops.push({ d, a: (-150 + i * 24) * Math.PI / 180, v: 0.8 + (i % 3) * 0.25 });
+}
+
+// pictos
+const PICTOS = [
+  ["Bio", '<path d="M12 40 C12 18 28 8 44 8 C44 28 34 42 14 42 M14 42 L32 22" />'],
+  ["Modène IGP", '<path d="M28 46 C18 34 12 26 12 19 A16 16 0 0 1 44 19 C44 26 38 34 28 46 Z" /><circle cx="28" cy="19" r="5" />'],
+  ["Vieilli en fût", '<path d="M16 6 Q8 28 16 50 H40 Q48 28 40 6 Z" /><line x1="11" y1="17" x2="45" y2="17" /><line x1="11" y1="39" x2="45" y2="39" />'],
+];
+const pictoEls = PICTOS.map(([label, path]) => {
+  const d = document.createElement("div");
+  d.style.cssText = `display:flex;flex-direction:column;align-items:center;margin:0 ${2.4 * U}px;width:${21 * U}px`;
+  d.innerHTML = `<svg viewBox="0 0 56 56" width="${11 * U}" height="${11 * U}" fill="none" stroke="#f7d774" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>
+    <div class="sans" style="font-size:${2.4 * U}px;letter-spacing:.14em;margin-top:${1.6 * U}px;color:var(--cream);white-space:nowrap">${label}</div>`;
+  $("pictos").appendChild(d);
+  return d;
+});
+
+// vignettes d'accords
+const FOODS = [
+  ["la burrata", `<circle cx="100" cy="100" r="92" fill="#efe6d6"/><circle cx="100" cy="100" r="80" fill="#f8f3ea"/>
+     <ellipse cx="100" cy="104" rx="46" ry="40" fill="#fffdf8"/><ellipse cx="86" cy="90" rx="16" ry="10" fill="#fff" opacity=".9"/>
+     <path d="M140 60 q14 -6 20 6 q-12 8 -20 -6z" fill="#4f7a2a"/><path d="M48 128 q10 -12 22 -4 q-8 12 -22 4z" fill="#4f7a2a"/>`,
+     "M62 92 C80 80 95 118 112 96 S136 104 142 116"],
+  ["les fraises", `<circle cx="100" cy="100" r="92" fill="#efe6d6"/><circle cx="100" cy="100" r="80" fill="#f8f3ea"/>
+     <g fill="#c8312b"><path d="M70 72 c-14 -14 -30 6 0 34 c30 -28 14 -48 0 -34z"/><path d="M128 76 c-14 -14 -30 6 0 34 c30 -28 14 -48 0 -34z"/><path d="M98 112 c-14 -14 -30 6 0 34 c30 -28 14 -48 0 -34z"/></g>
+     <g fill="#f7d774"><circle cx="66" cy="84" r="1.6"/><circle cx="74" cy="92" r="1.6"/><circle cx="124" cy="88" r="1.6"/><circle cx="132" cy="96" r="1.6"/><circle cx="94" cy="124" r="1.6"/><circle cx="102" cy="132" r="1.6"/></g>
+     <g fill="#4f7a2a"><path d="M64 70 l6 -8 l6 8z"/><path d="M122 74 l6 -8 l6 8z"/><path d="M92 110 l6 -8 l6 8z"/></g>`,
+     "M56 104 C78 92 96 128 112 100 S140 90 150 112"],
+  ["le parmesan", `<circle cx="100" cy="100" r="92" fill="#efe6d6"/><circle cx="100" cy="100" r="80" fill="#f8f3ea"/>
+     <path d="M54 126 L98 62 L120 132 Z" fill="#f1cf7a"/><path d="M54 126 L120 132 L118 140 L52 134 Z" fill="#d9a441"/>
+     <path d="M112 110 L144 72 L152 118 Z" fill="#f1cf7a"/><path d="M112 110 L152 118 L150 124 L110 116 Z" fill="#d9a441"/>
+     <circle cx="88" cy="104" r="2" fill="#e2b85a"/><circle cx="100" cy="116" r="2" fill="#e2b85a"/>`,
+     "M58 98 C82 84 96 120 116 94 S142 98 150 108"],
+];
+const vigEls = FOODS.map(([label, art, drizzle], i) => {
+  const s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  s.setAttribute("viewBox", "0 0 200 200");
+  s.setAttribute("class", "abs center");
+  s.innerHTML = art + `<path class="dz" d="${drizzle}" fill="none" stroke="#2a1206" stroke-width="5.5" stroke-linecap="round"/>
+    <path class="dzh" d="${drizzle}" fill="none" stroke="#b9772f" stroke-width="1.4" stroke-linecap="round" transform="translate(-1,-1.5)"/>`;
+  s.style.filter = "drop-shadow(0 12px 22px rgba(0,0,0,.5))";
+  $("vignettes").appendChild(s);
+  const paths = [...s.querySelectorAll(".dz,.dzh")];
+  paths.forEach(p => { const l = p.getTotalLength(); p.style.strokeDasharray = l; p.dataset.l = l; });
+  return { s, paths, label };
+});
+const VIG = {
+  port:   { d: H * .2,  pos: [[W * .5, H * .17], [W * .5, H * .40], [W * .5, H * .63]], ty: H * .84 },
+  square: { d: W * .27, pos: [[W * .2, H * .44], [W * .5, H * .44], [W * .8, H * .44]], ty: H * .80 },
+  land:   { d: H * .42, pos: [[W * .24, H * .42], [W * .5, H * .42], [W * .76, H * .42]], ty: H * .82 },
+}[ORIENT];
+
+// ---------- rendu d'une image ----------
+function renderLong(t) {
+  // fond : particules et lueur
+  parts.forEach(p => {
+    const y = ((p.y - p.sp * t) % H + H) % H;
+    const x = p.x + Math.sin(t * .6 + p.ph) * U * 1.5;
+    place(p.d, x, y, p.s, p.s, "", p.o * vis(t, .4, 2) * (0.6 + 0.4 * Math.sin(t * 1.3 + p.ph)));
+  });
+
+  // scène 1 : la goutte tombe (0 → 1,8 s)
+  const fall = prog(t, .25, 1.8);
+  const dropY = lerp(-H * .06, baseY - U * 2, fall * fall);
+  const stretch = 1 + fall * .35;
+  place($("drop"), L.bx, dropY, 6 * U, 9 * U, `scale(${1 / Math.sqrt(stretch)}, ${stretch})`, t < 1.8 ? 1 : 0);
+
+  // impact : ondes, éclaboussures, nappe
+  ["r1", "r2", "r3"].forEach((id, i) => {
+    const k = prog(t, 1.8 + i * .18, 3.0 + i * .18);
+    const r = $(id);
+    r.setAttribute("rx", 10 + k * 185); r.setAttribute("ry", 2 + k * 30);
+    r.setAttribute("opacity", k > 0 && k < 1 ? (1 - k) * .9 : 0);
+  });
+  place($("ripples"), L.bx, baseY, BW * 2.6, BW * .52, "", 1);
+  drops.forEach(dr => {
+    const k = prog(t, 1.8, 2.45);
+    const sz = U * .9;
+    const x = L.bx + Math.cos(dr.a) * dr.v * k * BW * .55;
+    const y = baseY + Math.sin(dr.a) * dr.v * k * BW * .65 + k * k * BW * .5;
+    place(dr.d, x, y, sz, sz, "", k > 0 && k < 1 ? 1 - k * .6 : 0);
+  });
+  const poolK = eout(prog(t, 1.8, 2.7)) * (1 - eio(prog(t, 10.6, 11.1)));
+  place($("pool"), L.bx, baseY, BW * 2.4, BW * .36, `scale(${Math.max(.01, poolK)})`, poolK > 0 ? 1 : 0);
+
+  // bouteille
+  let bx = L.bx, by = L.by, bs = 1, bo = 0, blur = 0;
+  const rise = eout(prog(t, 2.1, 3.5));
+  bo = rise; by += (1 - rise) * L.bh * .12; blur = (1 - rise) * 14;
+  // scène 3 : zoom sur l'étiquette (5 → 8 s)
+  const zin = eio(prog(t, 5, 6.6)), zout = eio(prog(t, 7.6, 8.6));
+  const z = zin * (1 - zout);
+  const zScale = ORIENT === "land" ? 1.15 : 1.4;
+  bs = 1 + (zScale - 1) * z;
+  by -= (0.64 - 0.5) * L.bh * (zScale - 1) * z;      // garde l'étiquette dans le cadre
+  // scène 5 : la bouteille s'efface (10,6 → 11,2 s)
+  const leave = eio(prog(t, 10.6, 11.2));
+  bo *= 1 - leave; bx -= leave * W * .08;
+  // scène 6 : la bouteille entre dans le coffret (14,8 → 16,2 s)
+  const boxS = .72;
+  const GDY = ORIENT === "square" ? -H * .1 : 0;      // en carré, le coffret remonte pour laisser la place au texte
+  const FTY = ORIENT === "square" ? H * .80 : L.ty;
+  const boxBottleY = L.by + L.bh * (1 - boxS) / 2 - L.bh * .02 + GDY;
+  if (t >= 14.8) {
+    const back = eout(prog(t, 14.8, 15.4)), dive = eio(prog(t, 15.3, 16.3));
+    bx = L.bx; bs = boxS; bo = back; blur = 0;
+    by = lerp(boxBottleY - L.bh * .28, boxBottleY, dive);
+  }
+  $("bottle").style.filter = `blur(${blur}px) drop-shadow(0 ${2 * U}px ${4 * U}px rgba(0,0,0,.6))`;
+  place($("bottle"), bx, by, BW, L.bh, `scale(${bs})`, bo);
+  // reflet qui balaie l'étiquette
+  const sw = prog(t, 5.6, 7.2);
+  $("sweep").setAttribute("x", lerp(-120, 330, sw));
+
+  // lueur derrière la bouteille
+  const gk = vis(t, 2.2, 3.6) * (1 - .55 * eio(prog(t, 10.6, 11.2)) + .55 * eio(prog(t, 14.8, 15.8)));
+  const gs = L.bh * 1.3 * (1 + .04 * Math.sin(t * 1.4));
+  place(glow, L.bx, L.by + (t >= 14.8 ? GDY : 0), gs, gs, "", gk * .95);
+
+  // fûts flous (scène 3)
+  const bk = vis(t, 5, 6, 7.7, 8.5);
+  $("barrels").style.filter = `blur(${U * .7}px)`;
+  const brw = ORIENT === "land" ? W * .55 : W * 1.1;
+  place($("barrels"), L.bx + (t - 6.5) * U * 1.2, L.by - L.bh * .05, brw, brw / 2, "", bk * .4);
+
+  // textes
+  const tb = vis(t, 2.8, 3.8, 4.7, 5.2);
+  $("tBronzoMain").style.letterSpacing = lerp(.45, .08, eout(prog(t, 2.8, 4.2))) + "em";
+  place($("tBronzo"), L.tx, L.ty, L.tw, null, `translateY(${(1 - tb) * U * 2}px)`, tb);
+  const t10 = vis(t, 5.6, 6.4, 7.6, 8.1);
+  place($("t10"), L.tx, ORIENT === "land" ? L.ty : L.ty + (ORIENT === "port" ? 0 : 0), L.tw, null, `translateY(${(1 - t10) * U * 2}px)`, t10);
+  const pk = vis(t, 8.3, 8.6, 10.5, 10.9);
+  place($("pictos"), L.tx, L.ty, L.tw, null, "", pk > 0 ? 1 : 0);
+  pictoEls.forEach((el, i) => {
+    const k = vis(t, 8.3 + i * .45, 9.0 + i * .45, 10.5, 10.9);
+    el.style.opacity = k;
+    el.style.transform = `translateY(${(1 - k) * U * 3}px)`;
+  });
+
+  // scène 5 : accords (11 → 15 s)
+  vigEls.forEach((v, i) => {
+    const a = 11.2 + i * .9;
+    const k = eback(prog(t, a, a + .6)) * (1 - eio(prog(t, 14.6, 15.1)));
+    const [x, y] = VIG.pos[i];
+    place(v.s, x, y, VIG.d, VIG.d, `scale(${Math.max(.01, k)})`, k > 0.01 ? 1 : 0);
+    const dk = eio(prog(t, a + .45, a + 1.2));
+    v.paths.forEach(p => p.style.strokeDashoffset = p.dataset.l * (1 - dk));
+  });
+  // le texte se construit au fil des vignettes
+  const shown = FOODS.filter((_, i) => t >= 11.4 + i * .9).map(f => f[0]);
+  const ta = $("tAccords");
+  const txt = shown.length ? "Sur " + shown.join(", ") + (shown.length === 3 ? "…" : "") : "";
+  if (ta.textContent !== txt) ta.textContent = txt;
+  const tak = vis(t, 11.4, 11.9, 14.6, 15.0);
+  place(ta, W / 2, VIG.ty, W * .95, null, "", tak);
+
+  // scène 6 : coffret (15 → 18 s)
+  const boxW = BW * boxS * 2.3, boxH = boxW * 170 / 300;
+  const boxY = L.by + L.bh / 2 - boxH / 2 + L.bh * .02 + GDY;
+  const bxk = eout(prog(t, 14.9, 15.5));
+  place($("box"), L.bx, boxY + (1 - bxk) * U * 6, boxW, boxH, "", bxk);
+  const rib = eio(prog(t, 16.2, 16.8));
+  $("ribV").setAttribute("height", 170 * rib);
+  $("ribH").setAttribute("width", 300 * rib);
+  const bow = $("bow"), bl = bow.getTotalLength();
+  bow.style.strokeDasharray = bl;
+  bow.style.strokeDashoffset = bl * (1 - eio(prog(t, 16.6, 17.5)));
+
+  const tc = vis(t, 15.7, 16.5, 17.7, 18.1);
+  place($("tCoffret"), L.tx, FTY, L.tw, null, `translateY(${(1 - tc) * U * 2}px)`, tc);
+
+  // scène 7 : plan final (18 → 20 s)
+  const fk = eout(prog(t, 18.1, 18.7));
+  place($("final"), L.tx, FTY + (ORIENT === "port" ? H * .03 : 0), L.tw, null, "", fk > 0 ? 1 : 0);
+  [["fLogo", 18.1], ["fTag", 18.4], ["fUrl", 18.7], ["cta", 18.9]].forEach(([id, a]) => {
+    const k = eout(prog(t, a, a + .5));
+    $(id).style.opacity = k;
+    $(id).style.transform = `translateY(${(1 - k) * U * 2}px)`;
+  });
+
+  // fondu d'ouverture
+  return 1 - prog(t, 0, .35);
+}
+
+// version 6 s : goutte + bouteille, puis plan final
+function render(t) {
+  let fade;
+  if (MODE === "short") {
+    if (t < 3.9) fade = Math.max(renderLong(t), prog(t, 3.6, 3.9));
+    else fade = Math.max(renderLong(t - 3.9 + 18.1), 1 - prog(t, 3.9, 4.2));
+  } else {
+    fade = renderLong(t);
+  }
+  place($("fade"), W / 2, H / 2, W, H, "", fade);
+}
+window.render = render;
+window.DURATION = DURATION;
+
+// aperçu dans le navigateur
+document.fonts.ready.then(() => {
+  window.ready = true;
+  if (P.has("t")) { render(+P.get("t")); return; }
+  if (P.get("play") === "0") return;
+  const t0 = performance.now();
+  const loop = () => { render(((performance.now() - t0) / 1000) % DURATION); requestAnimationFrame(loop); };
+  loop();
+});
+</script>
+</body>
+</html>
