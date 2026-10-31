@@ -2,6 +2,8 @@
 
 Application web mobile (PWA) qui reproduit l'interface d'une banque en ligne :
 
+![Aperçu : accueil, détails d'une opération, accueil après défilement](apercu.png)
+
 - **Accueil (Comptes)** : en-tête sombre avec avatar et « Besoin d'aide ? », carte du
   compte courant (solde, bouton « Déposer de l'argent », QR code doré), tuile « Carte »,
   actions rapides (Transfert, Factures, N° de compte, Budget, Business), 5 dernières
