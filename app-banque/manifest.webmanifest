@@ -2,7 +2,7 @@
   "name": "Kairos – Banque en ligne",
   "short_name": "Kairos",
   "lang": "fr",
-  "start_url": "./#/",
+  "start_url": "./#comptes",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",

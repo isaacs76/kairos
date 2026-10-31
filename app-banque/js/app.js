@@ -141,7 +141,7 @@
     const incoming = t.amount > 0;
     const statusCls = t.status !== 'done' ? ` tx-status-${t.status}` : '';
     return `
-      <a class="tx" href="#/operation/${encodeURIComponent(t.id)}">
+      <a class="tx" href="#operation-${encodeURIComponent(t.id)}">
         <span class="tx-icon">${txIcon(t)}</span>
         <span class="tx-name">${esc(t.label)}</span>
         <span class="tx-amount${incoming ? ' in' : ''}">${money(t.amount, true)}</span>
@@ -151,10 +151,10 @@
   }
 
   const NAV = [
-    { key: 'comptes', label: 'Comptes', href: '#/', icon: I.bank },
-    { key: 'epargne', label: 'Épargne', href: '#/epargne', icon: I.safe },
-    { key: 'investir', label: 'Investir', href: '#/investir', icon: I.invest },
-    { key: 'credit', label: 'Crédit', href: '#/credit', icon: I.credit },
+    { key: 'comptes', label: 'Comptes', href: '#comptes', icon: I.bank },
+    { key: 'epargne', label: 'Épargne', href: '#epargne', icon: I.safe },
+    { key: 'investir', label: 'Investir', href: '#investir', icon: I.invest },
+    { key: 'credit', label: 'Crédit', href: '#credit', icon: I.credit },
   ];
   const bottomNav = (active) => `
     <nav class="bottom-nav">
@@ -201,7 +201,7 @@
             </section>
           </div>
 
-          <a class="tile" href="#/carte">
+          <a class="tile" href="#carte">
             <div>
               <div class="tile-label">${I.cardPouch}<span>${esc(D.card.label)}</span></div>
               <div class="tile-amount">${hidden ? '••• F' : money(D.card.balance)}</div>
@@ -220,7 +220,7 @@
           <section class="tx-list">
             ${txs.slice(0, 5).map(txRow).join('')}
           </section>
-          <a class="see-all" href="#/operations">Tout afficher</a>
+          <a class="see-all" href="#operations">Tout afficher</a>
         </div>
         ${bottomNav('comptes')}
       </div>`;
@@ -357,14 +357,18 @@
   /* ---------------- Routeur ---------------- */
   const DEPTH = { home: 0, epargne: 0, investir: 0, credit: 0, operations: 1, carte: 1, operation: 2, notfound: 1 };
   // Pile des écrans visités dans l'app, pour que « retour » ne quitte jamais l'application.
-  const stack = [location.hash || '#/'];
+  // Adresses simples (#comptes, #operations, #operation-t1, #carte…), compatibles
+  // avec les visualiseurs qui n'acceptent que des noms d'ancre sans « / ».
+  const HOME = '#comptes';
+  const currentHash = () => location.hash || HOME;
+  const stack = [currentHash()];
 
   function parseRoute() {
-    const parts = (location.hash.replace(/^#\/?/, '') || '').split('/').filter(Boolean);
-    const [name = 'home', arg] = parts;
-    if (name === 'operation' && arg) return { name, arg: decodeURIComponent(arg) };
-    if (['operations', 'carte', 'epargne', 'investir', 'credit'].includes(name)) return { name };
-    if (name === 'home' || parts.length === 0) return { name: 'home' };
+    const h = decodeURIComponent(location.hash.replace(/^#\/?/, ''));
+    if (h === '' || h === 'comptes' || h === 'home') return { name: 'home' };
+    const op = /^operation[-/](.+)$/.exec(h);
+    if (op) return { name: 'operation', arg: op[1] };
+    if (['operations', 'carte', 'epargne', 'investir', 'credit'].includes(h)) return { name: h };
     return { name: 'notfound' };
   }
 
@@ -412,7 +416,7 @@
   }
 
   window.addEventListener('hashchange', () => {
-    const h = location.hash || '#/';
+    const h = currentHash();
     if (stack.length > 1 && stack[stack.length - 2] === h) stack.pop();
     else if (stack[stack.length - 1] !== h) stack.push(h);
     render();
@@ -424,8 +428,8 @@
       history.back();
     } else {
       // Ouvert directement sur une page secondaire : on remonte à l'accueil.
-      stack[0] = '#/';
-      location.replace('#/');
+      stack[0] = HOME;
+      location.replace(HOME);
     }
   }
 
